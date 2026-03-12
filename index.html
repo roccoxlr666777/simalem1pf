@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Supervivencia: Perdido en Alemania | Nivel A1</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #e74c3c;
+            --success: #27ae60;
+            --warning: #f1c40f;
+            --bg: #ecf0f1;
+            --card: #ffffff;
+            --text: #333333;
+            --german-gold: #FFCE00;
+            --german-red: #DD0000;
+            --german-black: #000000;
+            --mex-green: #006847;
+            --mex-red: #CE1126;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 850px;
+            width: 100%;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+        }
+        .header {
+            background: linear-gradient(90deg, var(--german-black) 33%, var(--german-red) 33%, var(--german-red) 66%, var(--german-gold) 66%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            border-bottom: 5px solid var(--primary);
+        }
+        .header h2 { margin: 0; font-size: 1.5rem; }
+        
+        .status-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #ddd;
+        }
+        .bar-container { width: 100%; background: #ddd; border-radius: 8px; overflow: hidden; height: 25px; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.5s ease-in-out; }
+        .bar-text { position: absolute; top: 0; left: 10px; line-height: 25px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; font-size: 0.9rem;}
+        
+        #mastery-fill { background-color: var(--success); width: 0%; }
+        #confusion-fill { background-color: var(--secondary); width: 100%; }
+
+        #intro-screen, #quiz-section, #result-screen { padding: 30px; }
+        #quiz-section, #result-screen { display: none; }
+        
+        .intro-instructions {
+            background: #eaf2f8;
+            padding: 20px;
+            border-left: 5px solid var(--primary);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        .input-group { margin-bottom: 20px; text-align: center; }
+        .input-group input { padding: 12px; font-size: 1.1rem; width: 80%; max-width: 350px; border: 2px solid #ccc; border-radius: 6px; }
+        
+        .scenario-box {
+            background-color: #fdfefe;
+            border: 2px dashed #bdc3c7;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.15rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .options-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        button.option-btn {
+            padding: 15px; font-size: 1rem; cursor: pointer; border: 2px solid #ddd;
+            background: white; border-radius: 8px; transition: 0.2s; text-align: left;
+        }
+        button.option-btn:hover:not(:disabled) { border-color: var(--primary); background: #f4f6f6; }
+        button.option-btn:disabled { cursor: not-allowed; }
+        
+        .correct { background-color: #d4efdf !important; border-color: var(--success) !important; color: #145a32; font-weight:bold;}
+        .incorrect { background-color: #fadbd8 !important; border-color: var(--secondary) !important; color: #78281f; font-weight:bold;}
+        
+        .btn-main { background-color: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; font-size: 1.1rem; cursor: pointer; transition: 0.3s;}
+        .btn-main:hover { background-color: #1a252f; }
+        .btn-whatsapp { background-color: #25D366; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; font-size: 1.1rem; cursor: pointer; margin-bottom: 15px;}
+        
+        .immediate-feedback {
+            display: none;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+            animation: fadeIn 0.4s;
+        }
+        .feedback-success { background-color: #d4efdf; border-left: 5px solid var(--success); color: #145a32; }
+        .feedback-error { background-color: #fadbd8; border-left: 5px solid var(--secondary); color: #78281f; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .certificate-box {
+            border: 15px solid #bdc3c7;
+            border-image: repeating-linear-gradient(45deg, var(--primary), var(--primary) 10px, transparent 10px, transparent 20px) 15;
+            padding: 40px;
+            text-align: center;
+            margin-top: 30px;
+            background: #fff;
+            position: relative;
+        }
+        .cert-title { font-size: 2rem; color: var(--primary); font-family: 'Times New Roman', serif; text-transform: uppercase; font-weight: bold;}
+        .cert-name { font-size: 2.2rem; color: var(--text); border-bottom: 2px solid #ccc; display: inline-block; padding: 0 30px; margin: 20px 0; font-family: 'Times New Roman', serif; }
+        
+        .stamps-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 40px;
+            align-items: center;
+        }
+        .consulate-stamp {
+            width: 130px; height: 130px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 0.8rem; text-align: center;
+            text-transform: uppercase; opacity: 0.85; transform: rotate(-15deg);
+        }
+        .stamp-ger { border: 6px double var(--german-black); color: var(--german-black); box-shadow: inset 0 0 0 4px var(--german-red), inset 0 0 0 8px var(--german-gold); }
+        .stamp-mex { border: 6px double var(--mex-green); color: var(--mex-green); box-shadow: inset 0 0 0 4px white, inset 0 0 0 8px var(--mex-red); transform: rotate(10deg);}
+
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; border-radius: 0; }
+            .no-print { display: none !important; }
+            .certificate-box { page-break-before: always; border: 10px solid var(--primary); margin: 0; height: 90vh; display: flex; flex-direction: column; justify-content: center; border-image: none;}
+            #result-screen { display: block !important; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header no-print">
+        <h2>🌲 Protocolo de Extracción: Schwarzwald 🌲</h2>
+    </div>
+
+    <div class="status-bars no-print" id="bars-section" style="display:none;">
+        <div class="bar-container">
+            <div class="bar-fill" id="mastery-fill"></div>
+            <div class="bar-text">Dominio del Idioma: <span id="mastery-text">0</span>%</div>
+        </div>
+        <div class="bar-container">
+            <div class="bar-fill" id="confusion-fill"></div>
+            <div class="bar-text">Nivel de Confusión Local: <span id="confusion-text">100</span>%</div>
+        </div>
+    </div>
+
+    <div id="intro-screen">
+        <h1 style="text-align: center; color: var(--primary);">Operación: Retorno a Puebla</h1>
+        
+        <div class="input-group">
+            <label style="display:block; margin-bottom:10px; font-weight:bold;">Identificación del Pasajero (Nombre Completo):</label>
+            <input type="text" id="passenger-name" placeholder="Ej. Dr. Julio C. G. Quintero" required>
+        </div>
+
+        <div class="intro-instructions">
+            <strong>⚠️ SITUACIÓN CRÍTICA:</strong><br><br>
+            El tren turístico te ha dejado atrás en un remoto pueblo de la Selva Negra (Schwarzwald). No hay señal de celular y el próximo tren hacia Frankfurt (para tomar tu vuelo a México) sale en poco tiempo.<br><br>
+            Nadie en este pueblo habla español ni inglés. Tu única esperanza de no quedar varado es comunicarte con los lugareños usando tus conocimientos de alemán (Nivel A1).<br><br>
+            <strong>MECÁNICA DE SUPERVIVENCIA:</strong><br>
+            • 📈 <strong>Aciertos:</strong> Aumentan tu Dominio del Idioma y reducen tu Confusión. Los lugareños te entienden.<br>
+            • 📉 <strong>Errores:</strong> Aumentan tu Confusión. Los lugareños te mandan en la dirección equivocada.<br>
+            • 🎯 <strong>Objetivo:</strong> Alcanzar un nivel de dominio suficiente para encontrar la estación de tren antes de que caiga la noche.
+        </div>
+        <button class="btn-main" onclick="startSurvival()">Iniciar Protocolo de Supervivencia 🧭</button>
+    </div>
+
+    <div id="quiz-section">
+        <div style="text-align: right; margin-bottom:10px; font-weight:bold; color:#7f8c8d;">Interacción <span id="current-q">1</span> de 20</div>
+        
+        <div class="scenario-box" id="question-text">Cargando situación...</div>
+        
+        <div class="options-grid" id="options-container"></div>
+        
+        <div class="immediate-feedback" id="feedback-box"></div>
+
+        <button class="btn-main no-print" id="btn-next" style="display:none;" onclick="nextQuestion()">Avanzar en el camino 🚶‍♂️</button>
+    </div>
+
+    <div id="result-screen">
+        <div class="no-print" style="text-align: center;">
+            <h2 id="final-title"></h2>
+            <p id="final-epilogue" style="font-size: 1.1rem; line-height: 1.5; background: #eaf2f8; padding: 20px; border-radius: 8px;"></p>
+            <br>
+            <button class="btn-whatsapp" onclick="sendWhatsApp()">📲 Enviar Reporte a Jefatura (WhatsApp)</button>
+            <button class="btn-main" onclick="window.print()" style="margin-bottom: 15px; background-color: #34495e;">📥 Imprimir Salvoconducto (PDF)</button>
+            <button onclick="location.reload()" style="background: #bdc3c7; color: #333; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold;">Reiniciar Simulación</button>
+        </div>
+
+        <div class="certificate-box">
+            <div class="cert-title">Salvoconducto Internacional</div>
+            <div style="margin-top: 10px; color: #7f8c8d; font-weight: bold;">Evaluación de Supervivencia Lingüística A1</div>
+            
+            <div style="margin-top: 30px;">Emitido a favor del ciudadano:</div>
+            <div class="cert-name" id="cert-name-display">Nombre</div>
+            
+            <div style="font-size: 1.1rem; line-height: 1.6; margin: 20px 0;">
+                Por haber demostrado la competencia gramatical necesaria en casos de Acusativo, Dativo y uso de preposiciones bajo condiciones de alta presión, logrando su extracción exitosa de territorio europeo.
+            </div>
+            
+            <div style="font-size: 1.3rem; margin-top: 20px;">
+                Dominio Final: <strong id="cert-mastery"></strong>%<br>
+                Estatus: <strong id="cert-status"></strong>
+            </div>
+
+            <div class="stamps-container">
+                <div class="consulate-stamp stamp-mex">
+                    Consulado<br>de México<br>---<br>Aprobado
+                </div>
+                <div class="consulate-stamp stamp-ger">
+                    Deutsches<br>Konsulat<br>---<br>Geprüft
+                </div>
+            </div>
+        </div>
+        
+        <div class="no-print" style="margin-top: 40px;">
+            <h3 style="color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px;">Bitácora de Errores y Aciertos</h3>
+            <div id="full-feedback-log"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const questionsList = [
+        {
+            q: "La niebla es espesa y te has perdido. Buscas a la máxima autoridad del pueblo para pedir ayuda. Preguntas a una sombra: '¿Quién es el maestro?' <br><br><em>(Ayuda: Recuerda el pronombre correcto para personas)</em>.",
+            options: ["Was ist der Lehrer?", "Wer ist der Lehrer?", "Wie ist der Lehrer?"],
+            correct: 1,
+            explanation: "'Wer' significa ¿Quién?, 'Was' es ¿Qué? y 'Wie' es ¿Cómo?. Para preguntar por una persona siempre usamos 'Wer'."
+        },
+        {
+            q: "Un lobo aúlla a lo lejos. Debes huir cruzando el agua. Dices con determinación: 'Yo camino a través del río'. (El río = Der Fluss). <br><br><em>(Ayuda: 'durch' exige siempre ACUSATIVO)</em>.",
+            options: ["Ich laufe durch dem Fluss.", "Ich laufe durch den Fluss.", "Ich laufe durch der Fluss."],
+            correct: 1,
+            explanation: "La preposición 'durch' rige Acusativo. El artículo masculino 'Der' cambia a 'den'."
+        },
+        {
+            q: "Te cruzas con un cazador sombrío y le dices intentando calmarlo: 'Tú aprendes con el padre'. (El padre = Der Vater). <br><br><em>(Ayuda: 'mit' exige siempre DATIVO)</em>.",
+            options: ["Du lernst mit das Vater.", "Du lernst mit den Vater.", "Du lernst mit dem Vater."],
+            correct: 2,
+            explanation: "La preposición 'mit' rige Dativo. El artículo masculino 'Der' cambia a 'dem'."
+        },
+        {
+            q: "Para mantener la cordura, describes el dramático paisaje que te rodea: 'El cielo es azul y la montaña es verde'. (Cielo = Der Himmel, Montaña = Der Berg). <br><br><em>(Ayuda: Ambos son el sujeto principal de la oración, por lo tanto están en NOMINATIVO)</em>.",
+            options: ["Der Himmel ist blau und der Berg ist grün.", "Das Himmel ist rot und die Berg ist gelb.", "Die Himmel ist schwarz und das Berg ist weiß."],
+            correct: 0,
+            explanation: "Ambos sustantivos son masculinos y en Nominativo (el sujeto) mantienen su artículo 'Der'."
+        },
+        {
+            q: "¡La tormenta arrecia! Le gritas a tu compañero de viaje: 'Yo camino a través del río y tú estás en el bosque'. (El río = Der Fluss, El bosque = Der Wald). <br><br><em>(Ayuda: 'durch' + ACUSATIVO. Estar fijo 'in' + DATIVO)</em>.",
+            options: ["Ich laufe durch den Fluss und du bist in dem Wald.", "Ich laufe durch dem Fluss und du bist in den Wald.", "Ich laufe durch der Fluss und du bist in der Wald."],
+            correct: 0,
+            explanation: "'durch' exige Acusativo (den Fluss), mientras que estar fijo en un lugar con 'in' exige Dativo (in dem Wald)."
+        },
+        {
+            q: "Refugiado en una cabaña lúgubre, reclamas tus escasas pertenencias: 'Mi silla es roja y tu mesa es negra'. (Silla = Der Stuhl, Mesa = Der Tisch). <br><br><em>(Ayuda: Ambos son masculinos y están en NOMINATIVO)</em>.",
+            options: ["Meine Stuhl ist rot und deine Tisch ist schwarz.", "Mein Stuhl ist rot und dein Tisch ist schwarz.", "Mein Stuhl ist blau und dein Tisch ist grün."],
+            correct: 1,
+            explanation: "Ambos son masculinos en Nominativo, por lo que los posesivos no llevan la terminación '-e' de los femeninos."
+        },
+        {
+            q: "Intentas ganarte el favor del alcalde del pueblo comprando suministros: 'Yo compro una silla para la oficina'. (Oficina = Das Büro). <br><br><em>(Ayuda: El verbo 'kaufen' y la preposición 'für' rigen ambos ACUSATIVO)</em>.",
+            options: ["Ich kaufe einen Stuhl für das Büro.", "Ich kaufe ein Stuhl für dem Büro.", "Ich kaufe einem Stuhl für den Büro."],
+            correct: 0,
+            explanation: "Verbo 'kaufen' rige Acusativo (einen Stuhl). La preposición 'für' rige Acusativo, y el neutro 'Das' no cambia (für das Büro)."
+        },
+        {
+            q: "Te persiguen en la oscuridad. Alguien grita preguntando por el alcalde. Respondes rápidamente para despistarlos: 'Él trabaja en la oficina'. <br><br><em>(Ayuda: Indicar ubicación fija 'in' exige DATIVO)</em>.",
+            options: ["Er arbeit in das Büro.", "Er arbeite in den Büro.", "Er arbeitet in dem Büro."],
+            correct: 2,
+            explanation: "Conjugación correcta 'arbeitet'. Ubicación fija con 'in' exige Dativo, transformando el neutro 'Das' en 'dem'."
+        },
+        {
+            q: "Haciendo plática para generar empatía con tus captores: 'Yo tengo un hermano y una hermana'. (Hermano = Der Bruder, Hermana = Die Schwester). <br><br><em>(Ayuda: El verbo 'haben' rige ACUSATIVO directo)</em>.",
+            options: ["Ich habe ein Bruder und ein Schwester.", "Ich habe einen Bruder und eine Schwester.", "Ich habe einem Bruder und einer Schwester."],
+            correct: 1,
+            explanation: "El verbo 'haben' rige Acusativo. El masculino indefinido toma '-en' (einen) y el femenino toma '-e' (eine)."
+        },
+        {
+            q: "Encuentras un diario viejo cubierto de polvo. Lees la inscripción: 'El libro es de la madre'. (Madre = Die Mutter). <br><br><em>(Ayuda: La preposición 'von' exige siempre DATIVO)</em>.",
+            options: ["Das Buch ist von der Mutter.", "Das Buch ist von die Mutter.", "Das Buch ist von dem Mutter."],
+            correct: 0,
+            explanation: "La preposición 'von' siempre exige Dativo. El artículo femenino 'Die' se transforma en 'der'."
+        },
+        {
+            q: "¡Te acorralan en la taberna! Observas tus salidas: 'El maestro está en la puerta y yo veo el cielo'. (Puerta = Die Tür, Estar de pie = stehen). <br><br><em>(Ayuda: Estar fijo 'an' + DATIVO. El verbo 'sehen' + ACUSATIVO)</em>.",
+            options: ["Der Lehrer steht an die Tür und ich sehe dem Himmel.", "Der Lehrer steht an der Tür und ich sehe den Himmel.", "Der Lehrer steht an dem Tür und ich sehe der Himmel."],
+            correct: 1,
+            explanation: "Estar fijo 'an' exige Dativo (femenino 'Die' cambia a 'der Tür'). El verbo ver 'sehen' exige Acusativo (masculino 'Der' cambia a 'den Himmel')."
+        },
+        {
+            q: "Logras escapar, pero estás completamente desorientado. Gritas desesperado al primer estudiante que ves: '¿Dónde está la escuela?' (Escuela = Die Schule). <br><br><em>(Ayuda: Usa el pronombre correcto para indicar lugar)</em>.",
+            options: ["Wo ist die Schule?", "Wer ist die Schule?", "Was ist die Schule?"],
+            correct: 0,
+            explanation: "'Wo' significa ¿Dónde?. Es vital para orientarse."
+        },
+        {
+            q: "Ves a una chica huyendo sola hacia la estación de tren. Exclamas: 'Ella viaja sin el padre'. (Padre = Der Vater). <br><br><em>(Ayuda: La preposición 'ohne' exige siempre ACUSATIVO)</em>.",
+            options: ["Sie reist ohne dem Vater.", "Sie reist ohne den Vater.", "Sie reist ohne der Vater."],
+            correct: 1,
+            explanation: "La preposición 'ohne' siempre exige Acusativo. El masculino 'Der' cambia a 'den'."
+        },
+        {
+            q: "La bestia del bosque vuelve a acecharte. Corres hacia lo alto diciendo: 'Yo voy hacia la montaña'. (Montaña = Der Berg). <br><br><em>(Ayuda: La preposición 'zu' exige siempre DATIVO)</em>.",
+            options: ["Ich gehe zu den Berg.", "Ich gehe zu dem Berg.", "Ich gehe zu das Berg."],
+            correct: 1,
+            explanation: "La preposición 'zu' siempre exige Dativo. El masculino 'Der' cambia a 'dem'."
+        },
+        {
+            q: "Te atrincheras en la escuela para salvar tu vida. 'La silla cae contra la puerta'. (Silla = Der Stuhl, Puerta = Die Tür). <br><br><em>(Ayuda: La preposición 'gegen' exige siempre ACUSATIVO)</em>.",
+            options: ["Der Stuhl fällt gegen der Tür.", "Der Stuhl fällt gegen die Tür.", "Der Stuhl fällt gegen dem Tür."],
+            correct: 1,
+            explanation: "La preposición 'gegen' siempre rige Acusativo. El femenino 'Die' no sufre modificaciones (gegen die Tür)."
+        },
+        {
+            q: "Para probar que eres humano y no un espíritu del bosque, describes a la familia: 'Mi madre es simpática y tu padre es alto'. <br><br><em>(Ayuda: Revisa las terminaciones de los posesivos en NOMINATIVO)</em>.",
+            options: ["Mein Mutter ist nett und deine Vater ist groß.", "Meine Mutter ist nett und dein Vater ist groß.", "Meine Mutter ist böse und dein Vater ist klein."],
+            correct: 1,
+            explanation: "El posesivo para femenino lleva 'e' (Meine Mutter), mientras que el posesivo masculino en Nominativo no (dein Vater)."
+        },
+        {
+            q: "El silencio en la oscuridad es aterrador. Susurras: 'Yo escucho un río y tú buscas una puerta'. (Río = Der Fluss, Puerta = Die Tür). <br><br><em>(Ayuda: Los verbos 'hören' y 'suchen' exigen ACUSATIVO)</em>.",
+            options: ["Ich höre einen Fluss und du suchst eine Tür.", "Ich hört ein Fluss und du suche ein Tür.", "Ich hören einem Fluss und du suchen einer Tür."],
+            correct: 0,
+            explanation: "Ambos verbos rigen Acusativo. 'Ich höre' + acusativo masculino (einen Fluss), 'du suchst' + acusativo femenino (eine Tür)."
+        },
+        {
+            q: "Encuentras pistas de un sobreviviente y alguien te dice: 'Él vive cerca de la escuela'. (Escuela = Die Schule). <br><br><em>(Ayuda: La preposición 'bei' exige siempre DATIVO)</em>.",
+            options: ["Er wohnt bei die Schule.", "Er wohnt bei der Schule.", "Er wohnt bei dem Schule."],
+            correct: 1,
+            explanation: "La preposición 'bei' siempre exige Dativo. El femenino 'Die' se transforma en 'der'."
+        },
+        {
+            q: "¡El andén del tren por fin está a la vista! Tienes que negociar el pasaje: 'Yo tengo un número y tú necesitas una mesa'. (Número = Die Nummer, Mesa = Der Tisch). <br><br><em>(Ayuda: Los verbos 'haben' y 'brauchen' exigen ACUSATIVO)</em>.",
+            options: ["Ich habe eine Nummer und du brauchst einen Tisch.", "Ich habe ein Nummer und du brauchst ein Tisch.", "Ich habe einer Nummer und du brauchst einem Tisch."],
+            correct: 0,
+            explanation: "Los verbos 'haben' y 'brauchen' exigen Acusativo directo. (eine Nummer / einen Tisch)."
+        }
+    ];
+
+    let currentQ = 0;
+    let mastery = 0;
+    let confusion = 100;
+    let answered = false;
+    let passengerName = ""; 
+    let historyLog = [];
+    let finalUserText = ""; // Guarda el texto libre de la Q20
+
+    const introScreen = document.getElementById('intro-screen');
+    const quizSection = document.getElementById('quiz-section');
+    const barsSection = document.getElementById('bars-section');
+    const qText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackBox = document.getElementById('feedback-box');
+    const btnNext = document.getElementById('btn-next');
+    
+    const masteryFill = document.getElementById('mastery-fill');
+    const confusionFill = document.getElementById('confusion-fill');
+    const masteryText = document.getElementById('mastery-text');
+    const confusionText = document.getElementById('confusion-text');
+
+    function startSurvival() {
+        const nameInput = document.getElementById('passenger-name').value.trim();
+        if(nameInput === "") {
+            alert("Necesitamos tu nombre para registrarte en el manifiesto del tren.");
+            return;
+        }
+        passengerName = nameInput;
+        document.getElementById('cert-name-display').innerText = passengerName;
+        
+        introScreen.style.display = 'none';
+        barsSection.style.display = 'flex';
+        quizSection.style.display = 'block';
+        loadQuestion();
+    }
+
+    function updateBars() {
+        if (mastery < 0) mastery = 0;
+        if (mastery > 100) mastery = 100;
+        if (confusion < 0) confusion = 0;
+        if (confusion > 100) confusion = 100;
+
+        masteryFill.style.width = mastery + '%';
+        confusionFill.style.width = confusion + '%';
+        masteryText.innerText = mastery;
+        confusionText.innerText = confusion;
+    }
+
+    function loadQuestion() {
+        answered = false;
+        btnNext.style.display = 'none';
+        feedbackBox.style.display = 'none';
+        feedbackBox.className = 'immediate-feedback'; 
+        
+        document.getElementById('current-q').innerText = currentQ + 1;
+        
+        // --- LOGICA DE LA PREGUNTA 20 (TEXTO LIBRE) ---
+        if (currentQ === 19) {
+            let promptMessage = "";
+            if (mastery >= 60) {
+                promptMessage = "¡La estación de tren está frente a ti! 🚂 Pero el guardia fronterizo bloquea el paso. Para demostrar que eres de confianza, te exige que te presentes. <strong>Escribe libremente 5 oraciones en alemán</strong> describiendo quién eres, cómo eres y qué tienes/necesitas para que te deje subir.";
+            } else {
+                promptMessage = "¡La noche ha caído, la confusión es total y estás completamente perdido! 🐺 Encuentras una paloma mensajera. <strong>Escribe rápidamente una nota de rescate de 5 oraciones en alemán</strong> describiendo quién eres y cómo eres para que sepan a quién buscar.";
+            }
+
+            qText.innerHTML = `<span style="color:var(--secondary); font-weight:bold; font-size: 1.3rem;">¡Prueba Final de Supervivencia!</span><br><br>${promptMessage}`;
+            
+            optionsContainer.innerHTML = `<textarea id="final-text-input" rows="7" placeholder="Escribe aquí tus 5 oraciones en alemán. Ej: Ich bin... Ich habe..." style="width: 100%; padding: 15px; font-size: 1.1rem; border: 2px dashed var(--primary); border-radius: 8px; resize: vertical; box-sizing: border-box;"></textarea>`;
+            
+            const btnSubmit = document.createElement('button');
+            btnSubmit.className = 'btn-main';
+            btnSubmit.style.marginTop = '15px';
+            btnSubmit.innerText = "Enviar mensaje y conocer mi destino 🏁";
+            btnSubmit.onclick = () => submitFinalText();
+            optionsContainer.appendChild(btnSubmit);
+            return;
+        }
+
+        // --- PREGUNTAS NORMALES 1-19 ---
+        qText.innerHTML = questionsList[currentQ].q;
+        optionsContainer.innerHTML = '';
+
+        questionsList[currentQ].options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIndex, btnElement) {
+        if (answered) return;
+        answered = true;
+        
+        const correctIndex = questionsList[currentQ].correct;
+        const buttons = optionsContainer.children;
+        const isCorrect = (selectedIndex === correctIndex);
+
+        historyLog.push({
+            q: questionsList[currentQ].q.replace(/<br>/g, ' ').replace(/<em>/g, '').replace(/<\/em>/g, ''),
+            user: questionsList[currentQ].options[selectedIndex],
+            correct: questionsList[currentQ].options[correctIndex],
+            isCorrect: isCorrect,
+            exp: questionsList[currentQ].explanation
+        });
+
+        if (isCorrect) {
+            btnElement.classList.add('correct');
+            mastery += 5; // Puntos por acierto
+            confusion -= 5;
+            
+            feedbackBox.innerHTML = `<strong>¡Bien hecho! Sobrevives un poco más.</strong><br>${questionsList[currentQ].explanation}`;
+            feedbackBox.classList.add('feedback-success');
+        } else {
+            btnElement.classList.add('incorrect');
+            buttons[correctIndex].classList.add('correct');
+            
+            mastery -= 2; 
+            confusion += 8; 
+            
+            feedbackBox.innerHTML = `<strong>¡Cuidado! Te has equivocado de camino.</strong><br>La respuesta correcta era: <em>${questionsList[currentQ].options[correctIndex]}</em>.<br>${questionsList[currentQ].explanation}`;
+            feedbackBox.classList.add('feedback-error');
+        }
+
+        updateBars();
+        feedbackBox.style.display = 'block';
+
+        for (let i = 0; i < buttons.length; i++) {
+            buttons[i].disabled = true;
+        }
+
+        btnNext.style.display = 'block';
+        if(currentQ === questionsList.length - 2){
+            btnNext.innerText = "Avanzar a la prueba final 🚂";
+        }
+    }
+
+    function submitFinalText() {
+        const textInput = document.getElementById('final-text-input').value.trim();
+        if (textInput.length < 15) {
+            alert("¡Tu mensaje es demasiado corto! Escribe al menos un par de oraciones para tener oportunidad de sobrevivir.");
+            return;
+        }
+        
+        finalUserText = textInput;
+        // Recompensa simbólica por intentar la pregunta libre
+        mastery += 5; 
+        confusion -= 5;
+        updateBars();
+        
+        showResults();
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        loadQuestion();
+    }
+
+    function showResults() {
+        quizSection.style.display = 'none';
+        barsSection.style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+
+        const finalMastery = mastery;
+        document.getElementById('cert-mastery').innerText = finalMastery;
+        
+        const titleUI = document.getElementById('final-title');
+        const epilogueUI = document.getElementById('final-epilogue');
+        const statusUI = document.getElementById('cert-status');
+
+        if (finalMastery >= 80) {
+            titleUI.innerText = "¡Extracción Exitosa! 🚂🎟️";
+            epilogueUI.innerHTML = "Lograste comunicarte bajo presión. Subiste al tren a tiempo, llegaste a Frankfurt y tu vuelo a México te espera. Has demostrado que las declinaciones no son rival para ti.";
+            statusUI.innerText = "Aprobado - Retorno Autorizado";
+            statusUI.style.color = "var(--success)";
+        } else if (finalMastery >= 55) {
+            titleUI.innerText = "Extracción Aprobada (Por los pelos) 😅";
+            epilogueUI.innerHTML = "Hubo varios malentendidos y casi te mandan a Austria por error. Afortunadamente, tu mensaje final convenció al guardia y te subió al tren en el último segundo.";
+            statusUI.innerText = "Aprobado con Advertencia";
+            statusUI.style.color = "var(--warning)";
+        } else {
+            titleUI.innerText = "Extracción Fallida... Quedaste Varado 🏕️";
+            epilogueUI.innerHTML = "La confusión fue total. Terminaste huyendo al lado contrario del bosque. Tendrás que sobrevivir a base de pretzels este invierno mientras esperan que tu mensaje de rescate llegue a Puebla. Tu licencia ha sido revocada.";
+            statusUI.innerText = "Reprobado - Varado en Alemania";
+            statusUI.style.color = "var(--secondary)";
+            // Esconder sellos si reprueba
+            document.querySelector('.stamps-container').style.opacity = "0.2";
+        }
+
+        const logContainer = document.getElementById('full-feedback-log');
+        
+        // Agregar el texto libre al log
+        logContainer.innerHTML += `
+            <div style="background:#eaf2f8; border:2px solid var(--primary); margin-bottom:20px; padding:15px; border-radius:8px;">
+                <p style="margin:0 0 10px 0; font-weight:bold; color:var(--primary);">Tu Mensaje Libre (Pregunta 20):</p>
+                <p style="margin:5px 0; font-style: italic;">"${finalUserText}"</p>
+                <p style="margin:5px 0; color:#555; font-size:0.9rem;">(Este texto será evaluado manualmente por tu instructor).</p>
+            </div>
+        `;
+
+        // Agregar historial de opción múltiple
+        historyLog.forEach((item, i) => {
+            const color = item.isCorrect ? 'var(--success)' : 'var(--secondary)';
+            const icon = item.isCorrect ? '✅' : '❌';
+            logContainer.innerHTML += `
+                <div style="background:#fff; border:1px solid #ddd; margin-bottom:10px; padding:15px; border-radius:8px;">
+                    <p style="margin:0 0 10px 0; font-weight:bold;">${i + 1}. ${item.q}</p>
+                    <p style="margin:5px 0;">Tu respuesta: <span style="color:${color}">${icon} ${item.user}</span></p>
+                    <p style="margin:5px 0; color:#555; font-size:0.9rem;"><em>${item.exp}</em></p>
+                </div>
+            `;
+        });
+    }
+
+    function sendWhatsApp() {
+        const phone = "522221158614";
+        
+        let message = `¡Hola jefatura! Reporte de Supervivencia de ${passengerName} 🌲🚂\n\n`;
+        message += `He terminado el Protocolo de Extracción (Acusativo y Dativo A1).\n`;
+        message += `📈 *Dominio del Idioma Final:* ${mastery}%\n`;
+        message += `📉 *Confusión Local:* ${confusion}%\n\n`;
+        
+        message += `📝 *MI MENSAJE EN ALEMÁN (Pregunta 20):*\n_"${finalUserText}"_\n\n`;
+
+        if (mastery >= 80) {
+            message += `¡Prueba exitosa! Logré tomar el tren de regreso a Puebla. 🇩🇪✨`;
+        } else if (mastery >= 55) {
+            message += `Sobreviví y tomé el tren, pero tuve problemas con las preposiciones. Necesitaré seguir repasando. 📚😅`;
+        } else {
+            message += `¡Emergencia! Quedé varado en la Selva Negra. Este es mi mensaje de rescate... 🚨🚑`;
+        }
+
+        const encodedMessage = encodeURIComponent(message);
+        const waLink = `https://wa.me/${phone}?text=${encodedMessage}`;
+        
+        window.open(waLink, '_blank');
+    }
+</script>
+
+</body>
+</html>
